@@ -26,15 +26,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         //Install a SurfaceHolder. Callback to get notified when the underlying surface is created and destroyed.
         mHolder = getHolder();
         mHolder.addCallback(this);
-        //deprecaetd setting, following is required on Android versions prior to 3.0
+        //deprecated setting, following is required on Android versions prior to 3.0
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
     }
-
-    public SurfaceHolder getmHolder(){
-        return mHolder;
-    }
-
-
 
     /*public CameraPreview(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -55,6 +49,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         } catch (IOException e) {
             Log.d(TAG, "Error setting camera preview: " + e.getMessage());
         }
+
     }
 
     @Override
@@ -93,8 +88,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
     @Override
     public void surfaceDestroyed(SurfaceHolder surfaceHolder) {
-//Can leave this empty. Camera preview will be released in CameraActivity.
+    //Can leave this empty. Camera preview will be released in CameraActivity.
+
     }
+
+
+
 
 }
 

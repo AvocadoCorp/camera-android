@@ -3,14 +3,22 @@ package io.avocado.camera;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.os.Handler;
+import android.provider.MediaStore;
 import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
 import android.text.method.Touch;
@@ -25,6 +33,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -46,6 +55,13 @@ public class CameraActivity extends Activity {
     private boolean isRecording = false;
     private static int currentCameraId = 0;
 
+    ImageView cameraButton;
+
+    private long initTime;
+    private MotionEvent lastEvent;
+    private Handler handler = new Handler();
+
+    private static int RESULT_LOAD_IMAGE = 1;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -54,110 +70,159 @@ public class CameraActivity extends Activity {
         //Create an instance of camera
         mCamera = getCameraInstance();
         Log.d("testing", "camera null? " + String.valueOf(mCamera == null));
-
-        //Create a Preview view and set it as content for the activity
         mPreview = new CameraPreview(this, mCamera);
+        Log.d("testing", "preview null? " +String.valueOf(mPreview == null));
+
         FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
         preview.addView(mPreview);
 
-        //make another imageview
-        //Take photo
-        ImageView cameraButton = (ImageView) findViewById(R.id.button_photo);
-        cameraButton.setOnClickListener(
-                new View.OnClickListener() {
+        cameraButton = (ImageView) findViewById(R.id.button_photo);
+        cameraButton.setOnTouchListener(
+                new View.OnTouchListener() {
 
                     @Override
-                    public void onClick(View view) {
-                        //get an image from the camera
-                        mCamera.startPreview();
-                        mCamera.takePicture(null, null, mPicture);
+                    public boolean onTouch(View view, MotionEvent me) {
+                        //user is clicking image view
+                        if (me.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                            //receive time of down press
+                            initTime = System.currentTimeMillis();
+                            lastEvent = me;
+                            handler.postDelayed(runnable, 10);
 
+                        }
 
+                        return true;
 
                     }
 
-                }
 
+                }
         );
-        //Add a listener to the video imageview
-        //this imageview records video
-        ImageView videoButton = (ImageView) findViewById(R.id.button_video);
-        videoButton.setOnClickListener(
+
+        //this creates the image view to swap between cameras.
+        ImageView otherCamera = (ImageView) findViewById(R.id.button_otherCamera);
+        otherCamera.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        //recording
-                        Log.d("testing", "video is triggered" + isRecording);
-                        if (isRecording) {
-                            //stop recording and release camera
-                            mMediaRecorder.stop();
-                            releaseMediaRecorder();
-                            mCamera.unlock();
-
-
-                            //inform the user that recording has stopped
-                            setVideoButtonText("Capture video");
-                            isRecording = false;
+                        //release camera before switching otherwise, app will crash
+                        mCamera.release();
+                        //swap the id of the camera to be used
+                        if (currentCameraId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                            currentCameraId = Camera.CameraInfo.CAMERA_FACING_FRONT;
                         } else {
-                            // initialize video camera
-                            if (prepareVideoRecorder()) {
-                                //Camera is available and unlocked, MediaRecorder is prepared, now you can start recording
-                                mMediaRecorder.start();
-
-                                //inform the user that recording has started
-                                //setVideoButtonText("Stop");
-                                isRecording = true;
-                            } else {
-                                //prepare didn't work, release the camera
-                                releaseMediaRecorder();
-                                //inform user
-                                Log.d(TAG, "MediaRecorder has been released");
-                            }
+                            currentCameraId = Camera.CameraInfo.CAMERA_FACING_BACK;
                         }
+                        mCamera = Camera.open(currentCameraId);
+                        setCameraDisplayOrientation(CameraActivity.this, currentCameraId, mCamera);
+                        try {
+                            mCamera.setPreviewDisplay(mPreview.getHolder());
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
+                        mCamera.startPreview();
                     }
+
+
                 }
         );
 
-        ImageView otherCamera = (ImageView) findViewById(R.id.button_otherCamera);
-        otherCamera.setOnClickListener(
-                new View.OnClickListener(){
+        //creates the image view to access gallery.
+        ImageView imageGallery = (ImageView) findViewById(R.id.button_gallery);
+        imageGallery.setOnClickListener(new View.OnClickListener(){
+
             @Override
-                public void onClick(View v){
-                //release camera before switching otherwise, app will crash
-                mCamera.release();
-                //swap the id of the camera to be used
-                if(currentCameraId == Camera.CameraInfo.CAMERA_FACING_BACK){
-                    currentCameraId = Camera.CameraInfo.CAMERA_FACING_FRONT;
-                }
-                else {
-                    currentCameraId = Camera.CameraInfo.CAMERA_FACING_BACK;
-                }
-                mCamera = Camera.open(currentCameraId);
-                setCameraDisplayOrientation(CameraActivity.this, currentCameraId, mCamera);
-                try{
-                    mCamera.setPreviewDisplay(mPreview.getmHolder());
-                }
-                catch(IOException e){
-                    e.printStackTrace();
-                }
-                mCamera.startPreview();
+            public void onClick(View view) {
+                Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(i, RESULT_LOAD_IMAGE);
             }
-
-
-
         });
 
-        mPreview.setOnTouchListener(new View.OnTouchListener() {
+        //screen is now listening for a touch to trigger camera focus.
+     /*   mPreview.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
                 cameraFocus();
                 return true;
             }
-        });
+        });*/
 
 
     }
 
+
+
+    //runnable class for detecting how long a user is holding the camera button.
+    final Runnable runnable = new Runnable() {
+        @Override
+        public void run() {
+            //check for state every .01 second
+            if (lastEvent.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                long curTime = System.currentTimeMillis();
+                if (curTime - initTime >= (long) 500 && !isRecording) {
+                    //change to video icon
+                    //begin to take video
+                    //initialize video camera
+                    cameraButton.setImageResource(R.drawable.video);
+                    if (prepareVideoRecorder()) {
+                        //Camera is available and unlocked, MediaRecorder is prepared, now you can start recording
+                        mMediaRecorder.start();
+                        isRecording = true;
+                        //inform user that recording has started
+
+                    } else {
+                        //prepare didn't work, release camera
+                        releaseMediaRecorder();
+                        //inform user
+                        Log.d(TAG, "MediaRecorder has been released");
+                    }
+                }
+            } else if (lastEvent.getActionMasked() == MotionEvent.ACTION_UP) {
+                if (isRecording) {
+                    //stop recording
+                    cameraButton.setImageResource(R.drawable.check);
+                    mMediaRecorder.stop();
+                    releaseMediaRecorder();
+                    mCamera.unlock();
+                    isRecording = false;
+                    //inform the user that the recording has stopped
+                    Log.d("recording finished", String.valueOf(isRecording == false));
+                }
+                long curTime = System.currentTimeMillis();
+                if (curTime - initTime < (long) 500) {
+                    // take photo
+                    //get an image from the camera
+                    mCamera.stopPreview();
+                    mCamera.startPreview();
+                    Log.d("camera null?", String.valueOf(mCamera == null));
+                    mCamera.takePicture(null, null, mPicture);
+
+                }
+            }
+            handler.postDelayed(this, 10);
+        }
+    };
+
+    //gallery access
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data){
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data){
+            Log.d("is loading", String.valueOf(true));
+            Uri selectedImage = data.getData();
+            String[] filePathColumn = {MediaStore.Images.Media.DATA};
+            Cursor cursor = getContentResolver().query(selectedImage, filePathColumn, null, null, null);
+            cursor.moveToFirst();
+            int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
+            String picturePath = cursor.getString(columnIndex);
+            cursor.close();
+            ImageView imageView = (ImageView) findViewById(R.id.imgView);
+            imageView.setImageBitmap(BitmapFactory.decodeFile(picturePath));
+        }
+
+    }
+
+    //sets the camera display orientation.
     public static void setCameraDisplayOrientation(Activity activity,
                                                    int cameraId, android.hardware.Camera camera) {
         android.hardware.Camera.CameraInfo info =
@@ -167,10 +232,18 @@ public class CameraActivity extends Activity {
                 .getRotation();
         int degrees = 0;
         switch (rotation) {
-            case Surface.ROTATION_0: degrees = 0; break;
-            case Surface.ROTATION_90: degrees = 90; break;
-            case Surface.ROTATION_180: degrees = 180; break;
-            case Surface.ROTATION_270: degrees = 270; break;
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
         }
 
         int result;
@@ -220,7 +293,7 @@ public class CameraActivity extends Activity {
             //Camera.getNumberOfCameras()-1
 
             Log.d("Number of Cameras", String.valueOf(Camera.getNumberOfCameras()));
-            int numCam = Camera.getNumberOfCameras()-1;
+            int numCam = Camera.getNumberOfCameras() - 1;
             currentCameraId = numCam;
             Log.d("testing", "numCam: " + numCam);
             c = Camera.open(numCam);
@@ -232,6 +305,7 @@ public class CameraActivity extends Activity {
         return c; //returns null if camera is unavailable
     }
 
+    //will try to write storage for media.
     private Camera.PictureCallback mPicture = new Camera.PictureCallback() {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
@@ -300,7 +374,7 @@ public class CameraActivity extends Activity {
         return mediaFile;
     }
 
-
+    //prepares the video recorder for use.
     private boolean prepareVideoRecorder() {
 
         mMediaRecorder = new MediaRecorder();
@@ -338,23 +412,27 @@ public class CameraActivity extends Activity {
         return true;
     }
 
+    //Currently not used.
     private void setPhotoButtonText(String text) {
         ImageView photoButton = (ImageView) findViewById(R.id.button_photo);
         //photoButton.setText(text);
     }
 
+    /*//Currently not used.
     private void setVideoButtonText(String text) {
         ImageView videoButton = (ImageView) findViewById(R.id.button_video);
         //videoButton.setText(text);
-    }
+    } */
 
     @Override
+    //on pause will release both the camera and video recorder.
     protected void onPause() {
         super.onPause();
         releaseMediaRecorder();
         releaseCamera();
     }
 
+    //releases video recorder.
     private void releaseMediaRecorder() {
         if (mMediaRecorder != null) {
             mMediaRecorder.reset();
@@ -364,6 +442,7 @@ public class CameraActivity extends Activity {
         }
     }
 
+    //releases camera.
     private void releaseCamera() {
         if (mCamera != null) {
             mCamera.release();
@@ -371,6 +450,46 @@ public class CameraActivity extends Activity {
         }
     }
 
+    //possible internal storage method
+    private String saveToInternalStorage(Bitmap bitmapImage){
+        ContextWrapper cw = new ContextWrapper(getApplicationContext());
+        // path to /data/data/yourapp/app_data/imageDir
+        File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
+        // Create imageDir
+        File myPath=new File(directory,"profile.jpg");
+
+        FileOutputStream fos = null;
+        try {
+
+            fos = new FileOutputStream(myPath);
+
+            // Use the compress method on the BitMap object to write image to the OutputStream
+            bitmapImage.compress(Bitmap.CompressFormat.PNG, 100, fos);
+            fos.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return directory.getAbsolutePath();
+    }
+
+    private void loadImageFromStorage(String path)
+    {
+
+        try {
+            File f=new File(path, "profile.jpg");
+            Bitmap b = BitmapFactory.decodeStream(new FileInputStream(f));
+            ImageView img=(ImageView)findViewById(R.id.imgPicker);
+            img.setImageBitmap(b);
+        }
+        catch (FileNotFoundException e)
+        {
+            e.printStackTrace();
+        }
+
+    }
+
+
+    //Focuses camera on specified grid
     @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
     public void cameraFocus() {
 
