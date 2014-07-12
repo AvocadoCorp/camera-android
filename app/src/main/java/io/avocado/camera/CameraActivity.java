@@ -42,6 +42,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import static android.graphics.BitmapFactory.Options;
+
 
 public class CameraActivity extends Activity {
 
@@ -62,6 +64,7 @@ public class CameraActivity extends Activity {
     private Handler handler = new Handler();
 
     private static int RESULT_LOAD_IMAGE = 1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -138,15 +141,6 @@ public class CameraActivity extends Activity {
             }
         });
 
-        //screen is now listening for a touch to trigger camera focus.
-     /*   mPreview.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View view, MotionEvent motionEvent) {
-                cameraFocus();
-                return true;
-            }
-        });*/
-
 
     }
 
@@ -166,6 +160,7 @@ public class CameraActivity extends Activity {
                     cameraButton.setImageResource(R.drawable.video);
                     if (prepareVideoRecorder()) {
                         //Camera is available and unlocked, MediaRecorder is prepared, now you can start recording
+
                         mMediaRecorder.start();
                         isRecording = true;
                         //inform user that recording has started
@@ -195,7 +190,7 @@ public class CameraActivity extends Activity {
                     mCamera.stopPreview();
                     mCamera.startPreview();
                     Log.d("camera null?", String.valueOf(mCamera == null));
-                    mCamera.takePicture(null, null, mPicture);
+                    mCamera.takePicture(null , null, mPicture);
 
                 }
             }
@@ -207,7 +202,7 @@ public class CameraActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
         super.onActivityResult(requestCode, resultCode, data);
-        if(requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && null != data){
+        if(requestCode == RESULT_LOAD_IMAGE && resultCode == RESULT_OK && data != null){
             Log.d("is loading", String.valueOf(true));
             Uri selectedImage = data.getData();
             String[] filePathColumn = {MediaStore.Images.Media.DATA};
@@ -305,12 +300,14 @@ public class CameraActivity extends Activity {
         return c; //returns null if camera is unavailable
     }
 
+
+
     //will try to write storage for media.
     private Camera.PictureCallback mPicture = new Camera.PictureCallback() {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
 
-            File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+            /*File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
             if (pictureFile == null) {
 
                 Log.d(TAG, "Error creating media file, check storage permissions: ");
@@ -325,7 +322,22 @@ public class CameraActivity extends Activity {
                 Log.d(TAG, "File not found: " + e.getMessage());
             } catch (IOException e) {
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
+            }*/
+            try {
+                Thread.sleep(2000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
+            mCamera.startPreview();
+            Options options = new Options();
+            options.inDither = false;
+            options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+            Bitmap image = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+
+            String path = saveToInternalStorage(image);
+            loadImageFromStorage(path);
+
+
         }
 
     };
@@ -400,6 +412,7 @@ public class CameraActivity extends Activity {
         // Step 6: Prepare configured MediaRecorder
         try {
             mMediaRecorder.prepare();
+            Thread.sleep(1000);
         } catch (IllegalStateException e) {
             Log.d(TAG, "IllegalStateException preparing MediaRecorder: " + e.getMessage());
             releaseMediaRecorder();
@@ -408,21 +421,11 @@ public class CameraActivity extends Activity {
             Log.d(TAG, "IOException preparing MediaRecorder: " + e.getMessage());
             releaseMediaRecorder();
             return false;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
         }
         return true;
     }
-
-    //Currently not used.
-    private void setPhotoButtonText(String text) {
-        ImageView photoButton = (ImageView) findViewById(R.id.button_photo);
-        //photoButton.setText(text);
-    }
-
-    /*//Currently not used.
-    private void setVideoButtonText(String text) {
-        ImageView videoButton = (ImageView) findViewById(R.id.button_video);
-        //videoButton.setText(text);
-    } */
 
     @Override
     //on pause will release both the camera and video recorder.
@@ -447,6 +450,7 @@ public class CameraActivity extends Activity {
         if (mCamera != null) {
             mCamera.release();
             mCamera = null;
+            mPreview.getHolder().removeCallback(mPreview);
         }
     }
 
@@ -488,30 +492,6 @@ public class CameraActivity extends Activity {
 
     }
 
-
-    //Focuses camera on specified grid
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-    public void cameraFocus() {
-
-
-        // set Camera parameters
-        Camera.Parameters params = mCamera.getParameters();
-
-        if (params.getMaxNumMeteringAreas() > 0) {
-            // check that metering areas are supported
-            List<Camera.Area> meteringAreas = new ArrayList<Camera.Area>();
-            Rect areaRect1 = new Rect(-100, -100, 100, 100);    // specify an area in center of image
-            meteringAreas.add(new Camera.Area(areaRect1, 600)); // set weight to 60%
-            Rect areaRect2 = new Rect(800, -1000, 1000, -800);  // specify an area in upper right of image
-            meteringAreas.add(new Camera.Area(areaRect2, 400)); // set weight to 40%
-            params.setMeteringAreas(meteringAreas);
-            Log.d("cameraFocus is called upon", "YES");
-
-        }
-
-        mCamera.setParameters(params);
-
-    }
 
 
 }

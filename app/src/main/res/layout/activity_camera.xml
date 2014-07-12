@@ -1,60 +1,54 @@
 <?xml version="1.0" encoding= "utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="horizontal"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    >
+    android:orientation="vertical">
+
     <FrameLayout
         android:id="@+id/camera_preview"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
+        android:layout_height="fill_parent" />
 
-        />
+    <ImageView
+        android:id="@+id/imgPicker"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:layout_weight="1"
+        android:rotation="270" />
+
+    <ImageView
+        android:id="@+id/imgView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1" />
 
     <ImageView
         android:id="@+id/button_photo"
         android:layout_width="100dp"
-        android:layout_height ="100dp"
+        android:layout_height="100dp"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
-        android:padding = "15dp"
-        android:src="@drawable/check"
-        />
-
+        android:padding="15dp"
+        android:src="@drawable/check" />
 
     <ImageView
         android:id="@+id/button_otherCamera"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        android:layout_alignParentRight="true"
         android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
         android:padding="15dp"
-        android:src="@drawable/switchcamera"
-        />
+        android:src="@drawable/switchcamera" />
 
     <ImageView
         android:id="@+id/button_gallery"
         android:layout_width="100dp"
         android:layout_height="100dp"
-        android:layout_alignParentLeft="true"
         android:layout_alignParentBottom="true"
-        android:padding = "15dp"
-        android:src = "@drawable/albums"
-        />
-
-    <ImageView android:id="@+id/imgView"
-        android:layout_width="fill_parent"
-        android:layout_weight="1"
-        android:layout_height="wrap_content"
-        />
-
-    <ImageView android:id="@+id/imgPicker"
-        android:layout_width="fill_parent"
-        android:layout_weight="1"
-        android:layout_height="wrap_content"
-        />
-
-
-
+        android:layout_alignParentLeft="true"
+        android:padding="15dp"
+        android:src="@drawable/albums" />
 
 </RelativeLayout>
