@@ -3,9 +3,11 @@ package io.avocado.camera;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
+import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
@@ -26,6 +28,7 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -419,13 +422,14 @@ public class CameraActivity extends Activity {
             }*/
             //mCamera.startPreview();
 
-            /*Options options = new Options();
+            Options options = new Options();
             options.inDither = false;
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
             Bitmap image = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
             String path = saveToInternalStorage(image);
-            loadImageFromStorage(path);*/
+            
+            //loadImageFromStorage(path);
 
 
         }
@@ -545,7 +549,7 @@ public class CameraActivity extends Activity {
     }
 
     //possible internal storage method
-   /* private String saveToInternalStorage(Bitmap bitmapImage){
+   private String saveToInternalStorage(Bitmap bitmapImage){
         ContextWrapper cw = new ContextWrapper(getApplicationContext());
         // path to /data/data/yourapp/app_data/imageDir
         File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
@@ -565,7 +569,7 @@ public class CameraActivity extends Activity {
         }
         return directory.getAbsolutePath();
     }
-
+/*
     private void loadImageFromStorage(String path)
     {
 
