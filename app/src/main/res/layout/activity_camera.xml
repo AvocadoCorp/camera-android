@@ -25,6 +25,7 @@
         android:padding="15dp"
         android:src="@drawable/check"
         android:visibility="visible"
+        
         />
 
     <ImageView

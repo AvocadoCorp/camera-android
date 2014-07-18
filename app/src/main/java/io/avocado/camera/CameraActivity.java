@@ -3,48 +3,34 @@ package io.avocado.camera;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
-import android.content.ContextWrapper;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Rect;
 import android.hardware.Camera;
 import android.media.CamcorderProfile;
 import android.media.MediaRecorder;
-import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
-import android.support.v7.app.ActionBarActivity;
 import android.os.Bundle;
-import android.text.method.Touch;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.View;
-import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.ThreadPoolExecutor;
 
 import static android.graphics.BitmapFactory.Options;
 
@@ -226,18 +212,7 @@ public class CameraActivity extends Activity {
             @Override
             public void onClick(View view) {
                 //reverse
-                saveButton.setVisibility(View.GONE);
-                altReverseButton.setVisibility(View.GONE);
-                otherCamera.setVisibility(View.VISIBLE);
-                cameraButton.setVisibility(View.VISIBLE);
-                imageGallery.setVisibility(View.VISIBLE);
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                mCamera.startPreview();
-                //startActivity(new Intent(CameraActivity.this, CameraActivity.class));
+                startActivity(new Intent(CameraActivity.this, CameraActivity.class));
             }
         });
 
@@ -251,16 +226,16 @@ public class CameraActivity extends Activity {
 
     //runnable class for detecting how long a user is holding the camera button.
     final Runnable runnable = new Runnable() {
+        boolean pictureTaken = false;
         @Override
         public void run() {
             //check for state every .01 second
             if (lastEvent.getActionMasked() == MotionEvent.ACTION_DOWN) {
                 long curTime = System.currentTimeMillis();
-                if (curTime - initTime >= (long) 500 && !isRecording) {
+                if (curTime - initTime >= (long) 500 && !isRecording && !pictureTaken) {
                     //change to video icon
                     //begin to take video
                     //initialize video camera
-                    Log.d("isRecording when it should not", String.valueOf(true));
                     cameraButton.setImageResource(R.drawable.video);
                     if (prepareVideoRecorder()) {
                         //Camera is available and unlocked, MediaRecorder is prepared, now you can start recording
@@ -278,7 +253,6 @@ public class CameraActivity extends Activity {
             } else if (lastEvent.getActionMasked() == MotionEvent.ACTION_UP) {
                 if (isRecording) {
                     //stop recording
-                    Log.d("isRecording when it should not", String.valueOf(true));
                     cameraButton.setImageResource(R.drawable.check);
                     mMediaRecorder.stop();
                     releaseMediaRecorder();
@@ -301,6 +275,8 @@ public class CameraActivity extends Activity {
                     cameraButton.setVisibility(View.GONE);
                     saveButton.setVisibility(View.VISIBLE);
                     altReverseButton.setVisibility(View.VISIBLE);
+                    //somehow disable media recorder or do so on pictureCallback
+                    pictureTaken = true;
 
                 }
             }
@@ -418,7 +394,7 @@ public class CameraActivity extends Activity {
         public void onPictureTaken(byte[] data, Camera camera) {
 
             File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
-            Uri stuffAndThings = getOutputMediaFileUri(MEDIA_TYPE_IMAGE);
+            //Uri stuffAndThings = getOutputMediaFileUri(MEDIA_TYPE_IMAGE);
             if (pictureFile == null) {
 
                 Log.d(TAG, "Error creating media file, check storage permissions: ");
@@ -434,6 +410,7 @@ public class CameraActivity extends Activity {
             } catch (IOException e) {
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
             }
+
 
             /*try {
                 Thread.sleep(2000);
