@@ -10,15 +10,6 @@
         android:layout_height="fill_parent" />
 
     <ImageView
-        android:id="@+id/imgPicker"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
-        android:layout_alignParentRight="true"
-        android:layout_alignParentTop="true"
-        android:layout_weight="1"
-        android:rotation="270" />
-
-    <ImageView
         android:id="@+id/imgView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -26,29 +17,78 @@
 
     <ImageView
         android:id="@+id/button_photo"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:layout_alignParentBottom="true"
         android:layout_centerHorizontal="true"
+        android:layout_marginBottom="10dp"
         android:padding="15dp"
-        android:src="@drawable/check" />
+        android:src="@drawable/check"
+        android:visibility="visible"
+        />
 
     <ImageView
         android:id="@+id/button_otherCamera"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
+        android:layout_marginRight="10dp"
+        android:layout_marginBottom="10dp"
         android:padding="15dp"
-        android:src="@drawable/switchcamera" />
+        android:src="@drawable/switchcamera"
+        android:visibility="visible"
+        />
 
     <ImageView
         android:id="@+id/button_gallery"
-        android:layout_width="100dp"
-        android:layout_height="100dp"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft = "10dp"
         android:padding="15dp"
-        android:src="@drawable/albums" />
+        android:src="@drawable/albums"
+        android:visibility="visible"
+        />
+
+    <ImageView
+        android:id="@+id/button_reverse"
+        android:layout_width = "80dp"
+        android:layout_height= "80dp"
+        android:layout_alignParentBottom = "true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom = "10dp"
+        android:layout_marginRight = "10dp"
+        android:padding = "15dp"
+        android:src= "@drawable/reverse"
+        android:visibility = "gone"
+        />
+
+    <ImageView
+        android:id="@+id/button_save"
+        android:layout_width = "80dp"
+        android:layout_height = "80dp"
+        android:layout_alignParentBottom = "true"
+        android:layout_centerHorizontal= "true"
+        android:layout_marginBottom= "10dp"
+        android:padding = "15dp"
+        android:src = "@drawable/save"
+        android:visibility = "gone"
+        />
+
+    <ImageView
+        android:id="@+id/button_altReverse"
+        android:layout_width = "80dp"
+        android:layout_height = "80dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginBottom="10dp"
+        android:layout_marginRight="10dp"
+        android:padding = "15dp"
+        android:src= "@drawable/reverse"
+        android:visibility = "gone"
+        />
 
 </RelativeLayout>

@@ -41,6 +41,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static android.graphics.BitmapFactory.Options;
 
@@ -58,6 +62,11 @@ public class CameraActivity extends Activity {
     private static int currentCameraId = 0;
 
     ImageView cameraButton;
+    ImageView otherCamera;
+    ImageView imageGallery;
+    ImageView reverseButton;
+    ImageView saveButton;
+    ImageView altReverseButton;
 
     private long initTime;
     private MotionEvent lastEvent;
@@ -65,6 +74,12 @@ public class CameraActivity extends Activity {
 
     private static int RESULT_LOAD_IMAGE = 1;
 
+
+
+    int sdk = Build.VERSION.SDK_INT;
+
+
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -79,7 +94,14 @@ public class CameraActivity extends Activity {
         FrameLayout preview = (FrameLayout) findViewById(R.id.camera_preview);
         preview.addView(mPreview);
 
+
+
         cameraButton = (ImageView) findViewById(R.id.button_photo);
+        if(sdk < Build.VERSION_CODES.JELLY_BEAN){
+            cameraButton.setBackgroundDrawable(getResources().getDrawable(R.drawable.background_oval));
+        } else{
+            cameraButton.setBackground(getResources().getDrawable(R.drawable.background_oval));
+        }
         cameraButton.setOnTouchListener(
                 new View.OnTouchListener() {
 
@@ -103,27 +125,34 @@ public class CameraActivity extends Activity {
         );
 
         //this creates the image view to swap between cameras.
-        ImageView otherCamera = (ImageView) findViewById(R.id.button_otherCamera);
+        otherCamera = (ImageView) findViewById(R.id.button_otherCamera);
+        if(sdk < Build.VERSION_CODES.JELLY_BEAN){
+            otherCamera.setBackgroundDrawable(getResources().getDrawable(R.drawable.background_oval));
+        } else{
+            otherCamera.setBackground(getResources().getDrawable(R.drawable.background_oval));
+        }
         otherCamera.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
                         //release camera before switching otherwise, app will crash
-                        mCamera.release();
-                        //swap the id of the camera to be used
-                        if (currentCameraId == Camera.CameraInfo.CAMERA_FACING_BACK) {
-                            currentCameraId = Camera.CameraInfo.CAMERA_FACING_FRONT;
-                        } else {
-                            currentCameraId = Camera.CameraInfo.CAMERA_FACING_BACK;
+                        if(mCamera.getNumberOfCameras() >= 2) {
+                            mCamera.release();
+                            //swap the id of the camera to be used
+                            if (currentCameraId == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                                currentCameraId = Camera.CameraInfo.CAMERA_FACING_FRONT;
+                            } else {
+                                currentCameraId = Camera.CameraInfo.CAMERA_FACING_BACK;
+                            }
+                            mCamera = Camera.open(currentCameraId);
+                            setCameraDisplayOrientation(CameraActivity.this, currentCameraId, mCamera);
+                            try {
+                                mCamera.setPreviewDisplay(mPreview.getHolder());
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            mCamera.startPreview();
                         }
-                        mCamera = Camera.open(currentCameraId);
-                        setCameraDisplayOrientation(CameraActivity.this, currentCameraId, mCamera);
-                        try {
-                            mCamera.setPreviewDisplay(mPreview.getHolder());
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                        mCamera.startPreview();
                     }
 
 
@@ -131,15 +160,89 @@ public class CameraActivity extends Activity {
         );
 
         //creates the image view to access gallery.
-        ImageView imageGallery = (ImageView) findViewById(R.id.button_gallery);
+        imageGallery = (ImageView) findViewById(R.id.button_gallery);
+        if(sdk < Build.VERSION_CODES.JELLY_BEAN){
+            imageGallery.setBackgroundDrawable(getResources().getDrawable(R.drawable.background_oval));
+        } else{
+            imageGallery.setBackground(getResources().getDrawable(R.drawable.background_oval));
+        }
+
         imageGallery.setOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view) {
+                Log.d("imageGallery button is being pressed", String.valueOf(true));
+                Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+                startActivityForResult(i, RESULT_LOAD_IMAGE);
+                cameraButton.setVisibility(View.GONE);
+                otherCamera.setVisibility(View.GONE);
+                reverseButton.setVisibility(View.VISIBLE);
+            }
+        });
+
+        //to return to camera preview after choosing a photo from the gallery.
+        reverseButton = (ImageView) findViewById(R.id.button_reverse);
+        if(sdk < Build.VERSION_CODES.JELLY_BEAN){
+            reverseButton.setBackgroundDrawable(getResources().getDrawable(R.drawable.background_oval));
+        } else{
+            reverseButton.setBackground(getResources().getDrawable(R.drawable.background_oval));
+        }
+        reverseButton.setOnClickListener(new View.OnClickListener() {
 
             @Override
             public void onClick(View view) {
-                Intent i = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-                startActivityForResult(i, RESULT_LOAD_IMAGE);
+                //go back to camera preview
+                startActivity(new Intent(CameraActivity.this, CameraActivity.class));
+
+
             }
         });
+
+        //to save photos and videos
+        saveButton = (ImageView) findViewById(R.id.button_save);
+        if(sdk < Build.VERSION_CODES.JELLY_BEAN){
+            saveButton.setBackgroundDrawable(getResources().getDrawable(R.drawable.background_oval));
+        } else{
+            saveButton.setBackground(getResources().getDrawable(R.drawable.background_oval));
+        }
+
+        saveButton.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                //save photo
+            }
+        });
+
+        //in case of an ugly picture.
+        altReverseButton = (ImageView) findViewById(R.id.button_altReverse);
+        if(sdk < Build.VERSION_CODES.JELLY_BEAN){
+            altReverseButton.setBackgroundDrawable(getResources().getDrawable(R.drawable.background_oval));
+        } else{
+            altReverseButton.setBackground(getResources().getDrawable(R.drawable.background_oval));
+        }
+
+        altReverseButton.setOnClickListener(new View.OnClickListener(){
+
+            @Override
+            public void onClick(View view) {
+                //reverse
+                saveButton.setVisibility(View.GONE);
+                altReverseButton.setVisibility(View.GONE);
+                otherCamera.setVisibility(View.VISIBLE);
+                cameraButton.setVisibility(View.VISIBLE);
+                imageGallery.setVisibility(View.VISIBLE);
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                mCamera.startPreview();
+                //startActivity(new Intent(CameraActivity.this, CameraActivity.class));
+            }
+        });
+
+
+
 
 
     }
@@ -157,10 +260,10 @@ public class CameraActivity extends Activity {
                     //change to video icon
                     //begin to take video
                     //initialize video camera
+                    Log.d("isRecording when it should not", String.valueOf(true));
                     cameraButton.setImageResource(R.drawable.video);
                     if (prepareVideoRecorder()) {
                         //Camera is available and unlocked, MediaRecorder is prepared, now you can start recording
-
                         mMediaRecorder.start();
                         isRecording = true;
                         //inform user that recording has started
@@ -175,6 +278,7 @@ public class CameraActivity extends Activity {
             } else if (lastEvent.getActionMasked() == MotionEvent.ACTION_UP) {
                 if (isRecording) {
                     //stop recording
+                    Log.d("isRecording when it should not", String.valueOf(true));
                     cameraButton.setImageResource(R.drawable.check);
                     mMediaRecorder.stop();
                     releaseMediaRecorder();
@@ -191,6 +295,12 @@ public class CameraActivity extends Activity {
                     mCamera.startPreview();
                     Log.d("camera null?", String.valueOf(mCamera == null));
                     mCamera.takePicture(null , null, mPicture);
+                    mCamera.stopPreview();
+                    otherCamera.setVisibility(View.GONE);
+                    imageGallery.setVisibility(View.GONE);
+                    cameraButton.setVisibility(View.GONE);
+                    saveButton.setVisibility(View.VISIBLE);
+                    altReverseButton.setVisibility(View.VISIBLE);
 
                 }
             }
@@ -307,7 +417,8 @@ public class CameraActivity extends Activity {
         @Override
         public void onPictureTaken(byte[] data, Camera camera) {
 
-            /*File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+            File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
+            Uri stuffAndThings = getOutputMediaFileUri(MEDIA_TYPE_IMAGE);
             if (pictureFile == null) {
 
                 Log.d(TAG, "Error creating media file, check storage permissions: ");
@@ -322,20 +433,22 @@ public class CameraActivity extends Activity {
                 Log.d(TAG, "File not found: " + e.getMessage());
             } catch (IOException e) {
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
-            }*/
-            try {
+            }
+
+            /*try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }
-            mCamera.startPreview();
-            Options options = new Options();
+            }*/
+            //mCamera.startPreview();
+
+            /*Options options = new Options();
             options.inDither = false;
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
             Bitmap image = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
             String path = saveToInternalStorage(image);
-            loadImageFromStorage(path);
+            loadImageFromStorage(path);*/
 
 
         }
@@ -455,7 +568,7 @@ public class CameraActivity extends Activity {
     }
 
     //possible internal storage method
-    private String saveToInternalStorage(Bitmap bitmapImage){
+   /* private String saveToInternalStorage(Bitmap bitmapImage){
         ContextWrapper cw = new ContextWrapper(getApplicationContext());
         // path to /data/data/yourapp/app_data/imageDir
         File directory = cw.getDir("imageDir", Context.MODE_PRIVATE);
@@ -491,7 +604,7 @@ public class CameraActivity extends Activity {
         }
 
     }
-
+*/
 
 
 }
