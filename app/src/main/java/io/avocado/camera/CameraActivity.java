@@ -26,6 +26,7 @@ import android.view.Surface;
 import android.view.View;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -56,6 +57,7 @@ public class CameraActivity extends Activity {
     ImageView reverseButton;
     ImageView saveButton;
     ImageView altReverseButton;
+
 
     private long initTime;
     private MotionEvent lastEvent;
@@ -199,6 +201,28 @@ public class CameraActivity extends Activity {
             @Override
             public void onClick(View view) {
                 //save photo
+                Bitmap bm;
+                ImageView iView = (ImageView) findViewById(R.id.photo);
+                View v = iView;
+                v.setDrawingCacheEnabled(true);
+                bm=Bitmap.createBitmap(v.getDrawingCache());
+                v.setDrawingCacheEnabled(false);
+
+                String fileName="image.png";
+                File file=new File(fileName);
+
+                try
+                {
+
+                    FileOutputStream fOut=openFileOutput(fileName, MODE_PRIVATE);
+                    bm.compress(Bitmap.CompressFormat.PNG, 100, fOut);
+
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+
             }
         });
 
@@ -230,6 +254,7 @@ public class CameraActivity extends Activity {
     //runnable class for detecting how long a user is holding the camera button.
     final Runnable runnable = new Runnable() {
         boolean pictureTaken = false;
+        @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
         @Override
         public void run() {
             //check for state every .01 second
@@ -261,8 +286,10 @@ public class CameraActivity extends Activity {
                     releaseMediaRecorder();
                     mCamera.unlock();
                     isRecording = false;
+
                     //inform the user that the recording has stopped
                     Log.d("recording finished", String.valueOf(isRecording == false));
+
                 }
                 long curTime = System.currentTimeMillis();
                 if (curTime - initTime < (long) 500) {
@@ -397,7 +424,7 @@ public class CameraActivity extends Activity {
         public void onPictureTaken(byte[] data, Camera camera) {
 
             File pictureFile = getOutputMediaFile(MEDIA_TYPE_IMAGE);
-            //Uri stuffAndThings = getOutputMediaFileUri(MEDIA_TYPE_IMAGE);
+            Uri stuffAndThings = getOutputMediaFileUri(MEDIA_TYPE_IMAGE);
             if (pictureFile == null) {
 
                 Log.d(TAG, "Error creating media file, check storage permissions: ");
@@ -414,6 +441,9 @@ public class CameraActivity extends Activity {
                 Log.d(TAG, "Error accessing file: " + e.getMessage());
             }
 
+            Intent mediaScanIntent = new Intent( Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
+            mediaScanIntent.setData(stuffAndThings);
+            sendBroadcast(mediaScanIntent);
 
             /*try {
                 Thread.sleep(2000);
@@ -422,13 +452,13 @@ public class CameraActivity extends Activity {
             }*/
             //mCamera.startPreview();
 
-            Options options = new Options();
+            /*Options options = new Options();
             options.inDither = false;
             options.inPreferredConfig = Bitmap.Config.ARGB_8888;
             Bitmap image = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
-            String path = saveToInternalStorage(image);
-            
+            String path = saveToInternalStorage(image);*/
+
             //loadImageFromStorage(path);
 
 

@@ -16,6 +16,12 @@
         android:layout_weight="1" />
 
     <ImageView
+        android:id="@+id/photo"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_weight="1" />
+
+    <ImageView
         android:id="@+id/button_photo"
         android:layout_width="80dp"
         android:layout_height="80dp"
@@ -91,5 +97,6 @@
         android:src= "@drawable/reverse"
         android:visibility = "gone"
         />
+
 
 </RelativeLayout>
